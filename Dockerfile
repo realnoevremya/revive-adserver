@@ -20,8 +20,8 @@ ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/do
 RUN chmod +x /usr/local/bin/install-php-extensions
 
 # Install PHP extensions
-RUN install-php-extensions pdo_mysql mysqli opcache
+RUN install-php-extensions pdo_mysql mysqli opcache zip
 
 
 # Start services
-CMD ["php-fpm","-F"]
+CMD service nginx start && php-fpm
