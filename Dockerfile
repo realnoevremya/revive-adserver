@@ -1,47 +1,27 @@
-FROM alpine
+FROM php:8.1-fpm
 
 WORKDIR /var/www/html
 
-RUN apk --update upgrade && apk update && apk add curl ca-certificates && update-ca-certificates --fresh && apk add openssl
+EXPOSE 80
 
-RUN apk --update add \
-    --repository http://dl-cdn.alpinelinux.org/alpine/edge/main \
-    --repository http://dl-cdn.alpinelinux.org/alpine/edge/community \
-        nginx \
-        gzip \
-        php7 \
-        php7-dom \
-        php7-ctype \
-        php7-curl \
-        php7-fpm \
-        php7-gd \
-        php7-intl \
-        php7-json \
-        php7-mbstring \
-        php7-mcrypt \
-        php7-mysqli \
-        php7-mysqlnd \
-        php7-opcache \
-        php7-pdo \
-        php7-pdo_mysql \
-        php7-posix \
-        php7-session \
-        php7-xml \
-        php7-iconv \
-        php7-phar \
-        php7-openssl \
-        php7-zlib \
-        php7-zip \
-    && rm -rf /var/cache/apk/*
+#RUN apk --update upgrade && apk update && apk add curl ca-certificates && update-ca-certificates --fresh && apk add openssl
+RUN apt update && apt install -y zip gzip nginx curl openssl wget
 
 RUN wget -qO- https://download.revive-adserver.com/revive-adserver-5.4.1.tar.gz | tar xz --strip 1 \
-    && chown -R nobody:nobody . \
+    && chown -R www-data:www-data . \
     && rm -rf /var/cache/apk/*
 
 COPY docker/nginx.conf /etc/nginx/nginx.conf
 
-RUN mkdir -p /run/nginx
 
-EXPOSE 80
+# Easy installation of PHP extensions in official PHP Docker images
+# @see https://github.com/mlocati/docker-php-extension-installer
+ADD https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
+RUN chmod +x /usr/local/bin/install-php-extensions
 
-CMD php-fpm7 && nginx -g 'daemon off;'
+# Install PHP extensions
+RUN install-php-extensions pdo_mysql mysqli opcache
+
+
+# Start services
+CMD ["php-fpm","-F"]

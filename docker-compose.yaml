@@ -12,6 +12,8 @@ services:
         image: mysql:5.7
         restart: unless-stopped
         environment:
-         - MYSQL_DATABASE=revive
-         - MYSQL_USER=user
-         - MYSQL_PASSWORD=password
+          MYSQL_DATABASE: 'revive'
+          MYSQL_USER: 'user'
+          MYSQL_PASSWORD: '12345'
+          MYSQL_ROOT_PASSWORD: ''
+          MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
