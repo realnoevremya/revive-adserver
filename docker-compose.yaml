@@ -1,19 +1,21 @@
 version: '3.7'
 services:
-    revive:
-        build: .
-        container_name: revive
-        ports:
-         - '8010:80'
-        restart: always
-        depends_on:
-                - mysql
-    mysql:
-        image: mysql:5.7
-        restart: unless-stopped
-        environment:
-          MYSQL_DATABASE: 'revive'
-          MYSQL_USER: 'user'
-          MYSQL_PASSWORD: '12345'
-          MYSQL_ROOT_PASSWORD: ''
-          MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+  revive:
+    build: .
+    container_name: revive
+    ports:
+      - '8010:80'
+    restart: always
+    depends_on:
+      - mysql
+  mysql:
+    image: mysql:5.7
+    restart: unless-stopped
+    ports:
+      - '3307:3306'
+    environment:
+      MYSQL_DATABASE: 'revive'
+      MYSQL_USER: 'user'
+      MYSQL_PASSWORD: '12345'
+      MYSQL_ROOT_PASSWORD: '1q2w3e4r'
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
