@@ -9,13 +9,22 @@ services:
     depends_on:
       - mysql
   mysql:
-    image: mysql:5.7
+    container_name: revive-db
+    image: mysql:8.0.32
     restart: unless-stopped
     ports:
       - '3307:3306'
     environment:
-      MYSQL_DATABASE: 'revive'
+      MYSQL_DATABASE: 'adserver_550'
       MYSQL_USER: 'user'
       MYSQL_PASSWORD: '12345'
       MYSQL_ROOT_PASSWORD: '1q2w3e4r'
       MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+    volumes:
+      - ./docker/mysql/db:/var/lib/mysql
+      - ./docker/mysql/schema:/docker-entrypoint-initdb.d
+#      - ./docker/mysql/schema/:/opt/adserver_500
+networks:
+  default:
+    name: press-network
+    external: true
