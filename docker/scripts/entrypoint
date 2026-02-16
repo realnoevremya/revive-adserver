@@ -5,29 +5,6 @@ log() {
     echo "[$(date +'%Y-%m-%d %H:%M:%S')] $1"
 }
 
-set_installer_default() {
-    field="$1"
-    value="$2"
-    file="/var/www/html/lib/OA/Upgrade/Upgrade.php"
-
-    if [ -z "$value" ] || [ ! -f "$file" ]; then
-        return 0
-    fi
-
-    escaped="$(printf '%s' "$value" | sed 's/[\/&]/\\&/g')"
-    sed -ri "s#\\\$this->aDsn\\['database'\\]\\['$field'\\] = '[^']*';#\\\$this->aDsn['database']['$field'] = '$escaped';#" "$file"
-}
-
-# Dev defaults for installer step.
-set_installer_default "host" "${REVIVE_INSTALLER_DB_HOST:-}"
-set_installer_default "name" "${REVIVE_INSTALLER_DB_NAME:-}"
-set_installer_default "username" "${REVIVE_INSTALLER_DB_USER:-}"
-
-# Source tarball does not always include var/UPGRADE marker.
-if [ -d /var/www/html/var ] && [ ! -f /var/www/html/var/UPGRADE ] && [ ! -f /var/www/html/var/INSTALLED ]; then
-    touch /var/www/html/var/UPGRADE
-fi
-
 mkdir -p /run/nginx /run/php-fpm82
 mkdir -p /var/www/html/var/cache /var/www/html/var/plugins
 mkdir -p /var/www/html/www/images /var/www/html/www/delivery

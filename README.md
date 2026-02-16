@@ -13,14 +13,16 @@ docker compose -f docker-compose.dev.yaml up --build
 `http://localhost:8082`
 
 3. На шаге подключения к БД:
-- Host: `mysql`
-- Database: `revive_605`
-- User: `root` (рекомендуется) или `revive`
-- Password: пустой
+- Host: `localhost` (можно оставить по умолчанию) или `mysql`
+- Database: `revive`
+- User: `root` или `revive`
+- Password:
+  - для `root`: пустой
+  - для `revive`: `revive_pass`
 
 Важно:
-- Не используйте `localhost` как Host, иначе будет ошибка `No such file or directory (2002)`.
-- В dev для пользователей `root` и `revive` принудительно выставляется пустой пароль.
+- В dev `localhost` работает через общий MySQL socket между контейнерами.
+- В dev `root` доступен без пароля.
 
 4. Остановка:
 ```bash

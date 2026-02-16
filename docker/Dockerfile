@@ -15,8 +15,6 @@ FROM alpine:3.20
 WORKDIR /var/www/html
 
 RUN apk add --no-cache \
-    bash \
-    curl \
     nginx \
     php82 \
     php82-cli \
@@ -47,7 +45,8 @@ COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
 COPY --from=downloader /tmp/revive/ /var/www/html/
 
 RUN COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction \
-    && rm -rf /root/.composer/cache
+    && rm -rf /root/.composer/cache \
+    && rm -f /usr/local/bin/composer
 
 COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf
 COPY docker/nginx/default.conf /etc/nginx/http.d/default.conf
@@ -60,6 +59,7 @@ RUN chmod +x /usr/local/bin/entrypoint /usr/local/bin/start \
     && mkdir -p /run/nginx /run/php-fpm82 \
     && mkdir -p /var/www/html/var/cache /var/www/html/var/plugins \
     && mkdir -p /var/www/html/www/images /var/www/html/www/delivery \
+    && touch /var/www/html/var/UPGRADE \
     && chown -R nginx:nginx /var/www/html /run/nginx /run/php-fpm82
 
 EXPOSE 80
