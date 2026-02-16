@@ -1,0 +1,5 @@
+#!/bin/sh
+set -eu
+
+php-fpm82 -D
+exec nginx -g "daemon off;"

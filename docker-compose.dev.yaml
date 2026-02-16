@@ -1,0 +1,49 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        REVIVE_VERSION: "6.0.5"
+    container_name: revive-adserver-dev-app
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      REVIVE_INSTALLER_DB_HOST: mysql
+      REVIVE_INSTALLER_DB_NAME: revive_605
+      REVIVE_INSTALLER_DB_USER: root
+    ports:
+      - "8082:80"
+    volumes:
+      - revive_images_dev:/var/www/html/www/images
+      - revive_delivery_dev:/var/www/html/www/delivery
+      - revive_var_dev:/var/www/html/var
+
+  mysql:
+    image: mysql:8.0
+    container_name: revive-adserver-dev-db
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password --init-file=/docker-entrypoint-initdb.d/00-dev.sql
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      MYSQL_ROOT_HOST: "%"
+      MYSQL_DATABASE: revive_605
+      MYSQL_USER: revive
+      MYSQL_PASSWORD: revive_pass
+    volumes:
+      - mysql_data_dev:/var/lib/mysql
+      - ./docker/mysql/init/00-dev.sql:/docker-entrypoint-initdb.d/00-dev.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot --silent"]
+      interval: 30s
+      timeout: 5s
+      retries: 7
+      start_period: 30s
+
+volumes:
+  mysql_data_dev:
+  revive_images_dev:
+  revive_delivery_dev:
+  revive_var_dev:
