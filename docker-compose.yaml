@@ -11,7 +11,7 @@ services:
       mysql:
         condition: service_healthy
     ports:
-      - "127.0.0.1:8082:80"
+      - "8082:80"
     volumes:
       - revive_var:/var/www/html/var
       - revive_images:/var/www/html/www/images
