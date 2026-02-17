@@ -1,30 +1,46 @@
-version: '3.7'
 services:
   revive:
-    build: .
-    container_name: revive
-    ports:
-      - '8010:80'
-    restart: always
-    depends_on:
-      - mysql
-  mysql:
-    container_name: revive-db
-    image: mysql:8.0.32
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        REVIVE_VERSION: "6.0.5"
+    container_name: revive-adserver
     restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
     ports:
-      - '3307:3306'
-    environment:
-      MYSQL_DATABASE: 'adserver_550'
-      MYSQL_USER: 'user'
-      MYSQL_PASSWORD: '12345'
-      MYSQL_ROOT_PASSWORD: '1q2w3e4r'
-      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      - "127.0.0.1:8082:80"
     volumes:
-      - ./docker/mysql/db:/var/lib/mysql
-      - ./docker/mysql/schema:/docker-entrypoint-initdb.d
-#      - ./docker/mysql/schema/:/opt/adserver_500
-networks:
-  default:
-    name: press-network
-    external: true
+      - revive_var:/var/www/html/var
+      - revive_images:/var/www/html/www/images
+      - revive_delivery:/var/www/html/www/delivery
+      - mysql_socket:/run/mysqld
+
+  mysql:
+    image: mysql:8.0
+    container_name: revive-adserver-db
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_DATABASE: revive
+      MYSQL_USER: revive
+      MYSQL_PASSWORD: revivepass
+      MYSQL_ROOT_PASSWORD: change_root_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - mysql_socket:/run/mysqld
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -u$$MYSQL_USER -p$$MYSQL_PASSWORD --silent"]
+      interval: 30s
+      timeout: 5s
+      retries: 7
+      start_period: 30s
+
+volumes:
+  mysql_data:
+  mysql_socket:
+  revive_var:
+  revive_images:
+  revive_delivery:
