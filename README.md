@@ -60,7 +60,7 @@ docker compose -f docker-compose.yaml down
 
 5. Полный сброс (осторожно, удалит БД и файлы):
 ```bash
-docker compose -f docker-compose.yaml down -v
+$(ставь пробел впереди) docker compose -p revive -f docker-compose.yaml down -v
 ```
 
 Пример прокси в хостовом Nginx:
