@@ -23,20 +23,25 @@ docker compose -f docker-compose.dev.yaml up --build
 Важно:
 - В dev `localhost` работает через общий MySQL socket между контейнерами.
 - В dev `root` доступен без пароля.
+- В dev memcached поднимается отдельным контейнером `memcached`.
 
-4. Остановка:
+4. Настройка кэша в админке:
+- `memcachedServers`: `memcached:11211`
+- `memcachedExpireTime`: оставить пустым (или задать число в секундах, больше `delivery.cacheExpire`)
+
+5. Остановка:
 ```bash
 docker compose -f docker-compose.dev.yaml down
 ```
 
-5. Полный сброс (чистая установка):
+6. Полный сброс (чистая установка):
 ```bash
-docker compose -f docker-compose.dev.yaml down -v
+$(ставь пробел впереди)  docker compose -p revive -f docker-compose.dev.yaml down -v
 ```
 
 ## Запуск Prod
 
-1. Проверь пароли БД в `/revive-adserver/docker-compose.yaml`:
+1. Проверь пароли БД в `docker-compose.yaml`:
 - `MYSQL_ROOT_PASSWORD`
 - `MYSQL_PASSWORD`
 
@@ -53,12 +58,16 @@ docker compose -f docker-compose.yaml up -d --build
   - для `root`: значение `MYSQL_ROOT_PASSWORD`
   - для `revive`: значение `MYSQL_PASSWORD`
 
-4. Остановка:
+4. Настройка кэша в админке:
+- `memcachedServers`: `memcached:11211`
+- `memcachedExpireTime`: оставить пустым (или задать число в секундах, больше `delivery.cacheExpire`)
+
+5. Остановка:
 ```bash
 docker compose -f docker-compose.yaml down
 ```
 
-5. Полный сброс (осторожно, удалит БД и файлы):
+6. Полный сброс (осторожно, удалит БД и файлы):
 ```bash
 $(ставь пробел впереди) docker compose -p revive -f docker-compose.yaml down -v
 ```

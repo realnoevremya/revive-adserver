@@ -10,6 +10,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      memcached:
+        condition: service_started
     ports:
       - "8082:80"
     volumes:
@@ -38,6 +40,12 @@ services:
       timeout: 5s
       retries: 7
       start_period: 30s
+
+  memcached:
+    image: memcached:1.6-alpine
+    container_name: revive-adserver-dev-memcached
+    restart: unless-stopped
+    command: ["memcached", "-m", "128", "-p", "11211", "-u", "memcache"]
 
 volumes:
   mysql_data_dev:

@@ -27,6 +27,7 @@ RUN apk add --no-cache \
     php82-iconv \
     php82-intl \
     php82-mbstring \
+    php82-pecl-memcached \
     php82-mysqli \
     php82-opcache \
     php82-openssl \
