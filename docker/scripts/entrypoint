@@ -11,7 +11,7 @@ mkdir -p /var/www/html/www/images /var/www/html/www/delivery
 
 chown -R nginx:nginx /var/www/html /run/nginx /run/php-fpm82
 chmod -R 755 /var/www/html
-chmod -R 777 /var/www/html/var /var/www/html/www/images /var/www/html/www/delivery
+chmod -R 777 /var/www/html/var /var/www/html/www/images /var/www/html/www/delivery /var/www/html/var/plugins
 
 if [ -n "${TZ:-}" ]; then
     log "Set timezone to ${TZ}"

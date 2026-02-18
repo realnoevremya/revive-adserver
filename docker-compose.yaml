@@ -15,6 +15,7 @@ services:
     ports:
       - "8082:80"
     volumes:
+      - revive_plugins:/var/www/html/plugins
       - revive_var:/var/www/html/var
       - revive_images:/var/www/html/www/images
       - revive_delivery:/var/www/html/www/delivery
@@ -49,6 +50,7 @@ services:
 volumes:
   mysql_data:
   mysql_socket:
+  revive_plugins:
   revive_var:
   revive_images:
   revive_delivery:
