@@ -13,7 +13,7 @@ docker compose -f docker-compose.dev.yaml up --build
 `http://localhost:8082`
 
 3. На шаге подключения к БД:
-- Host: `localhost`
+- Host: `mysql`
 - Database: `revive`
 - User: `root` или `revive`
 - Password:

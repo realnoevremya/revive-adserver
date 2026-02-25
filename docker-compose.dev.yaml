@@ -19,7 +19,6 @@ services:
       - revive_images_dev:/var/www/html/www/images
       - revive_delivery_dev:/var/www/html/www/delivery
       - revive_var_dev:/var/www/html/var
-      - mysql_socket_dev:/run/mysqld
 
   mysql:
     image: mysql:8.0
