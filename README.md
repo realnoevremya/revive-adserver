@@ -13,17 +13,17 @@ docker compose -p revive -f docker-compose.dev.yaml up --build
 `http://localhost:8082`
 
 3. На шаге подключения к БД:
-- Host: `mysql`
-- Database: `revive`
+- Hostname: `mysql` <- имя контейнера
+- Database Name: `revive`
 - User: `root` или `revive`
 - Password:
   - для `root`: пустой
   - для `revive`: `revive_pass`
 
-Важно:
-- В dev `localhost` работает через общий MySQL socket между контейнерами.
-- В dev `root` доступен без пароля.
-- В dev memcached поднимается отдельным контейнером `memcached`.
+4. Форма юзера произвольная:
+- Administrator Username: `revive`
+- Administrator Password: `1q2w3e4r5t6y7u8i9o`
+- Administrator email: `revive@revive.ru`
 
 4. Настройка кэша в админке:
 - `memcachedServers`: `memcached:11211`
@@ -74,87 +74,90 @@ $(ставь пробел впереди) docker compose -p revive -f docker-com
 
 ## Обновление версии без потери БД и баннеров
 
-Ниже сценарий для `prod` (`docker-compose.yaml`). Для `dev` логика та же, только используй `docker-compose.dev.yaml` и контейнеры `revive-adserver-dev-app` / `revive-adserver-dev-db`.
+Для upgrade добавлен скрипт [`scripts/upgrade.sh`](scripts/upgrade.sh).  
+Он выполняет шаги автоматически:
+- бэкап БД (`mysqldump`)
+- бэкап файлов `images`, `delivery`, `var`, `plugins`
+- опционально скачивает архив целевой версии в `backups/.../archive`
+- останавливает стек без удаления всех volume
+- пересоздает `delivery` volume по умолчанию (и `plugins` volume опционально)
+- пересборка на новой версии
+- установка флага `var/UPGRADE`
 
-Что в этом проекте хранится в Docker volume и не пропадает при обычном перезапуске:
-- БД MySQL: `mysql_data`
-- Загруженные баннеры: `revive_images`
-- Каталог доставки и delivery-файлы: `revive_delivery`
-- Конфиг Revive и служебные данные: `revive_var`
-- Каталог плагинов: `revive_plugins`
+Важно: `upgrade.sh` всегда вызывает [`scripts/backup.sh`](scripts/backup.sh) автоматически перед апгрейдом.
+Если ты забудешь сделать ручной бэкап, апгрейд все равно создаст резервную копию сам.
 
-Важно:
-- обычный `docker compose down` не удаляет эти данные
-- `docker compose down -v` удаляет volume, а вместе с ними БД, баннеры и конфиг
-- для обновления версию нужно менять без `-v`
+Перед апгрейдом можно сделать отдельный ручной бэкап (опционально, как дополнительная страховка):
 
-Порядок обновления:
-
-1. Сделай резервную копию БД:
 ```bash
-mkdir -p backups
-docker compose -p revive -f docker-compose.yaml exec -T mysql \
-  mysqldump -uroot -p'ВАШ_MYSQL_ROOT_PASSWORD' --single-transaction --routines --triggers revive \
-  > backups/revive-$(date +%F-%H%M).sql
+scripts/backup.sh --mode dev
+# или
+scripts/backup.sh --mode prod
 ```
 
-2. Сделай резервную копию файлов, которые нельзя терять:
+В бэкап попадают:
+- SQL-дамп БД
+- `images`, `delivery`, `var`, `plugins`
+- метаданные compose/Dockerfile (для удобства отката)
+
+### Prod
+
 ```bash
-docker cp revive-adserver:/var/www/html/www/images ./backups/images-$(date +%F-%H%M)
-docker cp revive-adserver:/var/www/html/www/delivery ./backups/delivery-$(date +%F-%H%M)
-docker cp revive-adserver:/var/www/html/var ./backups/var-$(date +%F-%H%M)
-docker cp revive-adserver:/var/www/html/plugins ./backups/plugins-$(date +%F-%H%M)
+scripts/upgrade.sh --mode prod --version 6.0.6
 ```
 
-3. Поменяй версию Revive в трех местах:
-- `docker/Dockerfile`
+### Dev
+
+```bash
+scripts/upgrade.sh --mode dev --version 6.0.6
+```
+
+### Важные параметры
+
+- По умолчанию скрипт пересоздает только volume `delivery` (чтобы подтянуть свежие delivery-файлы из новой версии).
+- Если нужно также пересоздать `plugins` (когда нет кастомных плагинов), добавь:
+
+```bash
+scripts/upgrade.sh --mode prod --version 6.0.6 --recreate-plugins
+```
+
+### Где брать архив новой версии
+
+- Официальный архив:
+  `https://download.revive-adserver.com/revive-adserver-v<VERSION>.tar.gz`
+- Пример для `6.0.6`:
+  `https://download.revive-adserver.com/revive-adserver-v6.0.6.tar.gz`
+- В проекте это можно переопределить через `REVIVE_ARCHIVE_URL` или флаг скрипта `--archive-url`.
+- Если официальный архив недоступен, Dockerfile и скрипт используют fallback на GitHub tag archive.
+
+### После выполнения скрипта
+
+1. Открой `http://localhost:8082`
+2. Пройди Upgrade Wizard
+3. Проверь кампании, зоны, баннеры и выдачу на сайтах
+
+### После успешного апгрейда (рекомендуется)
+
+Только если все проверки прошли успешно, обнови дефолтную версию в проекте на новую:
 - `docker-compose.yaml`
 - `docker-compose.dev.yaml`
+- `docker/Dockerfile` (`ARG REVIVE_VERSION`)
 
-Обновить нужно значение `REVIVE_VERSION`.
+Зачем это нужно:
+- следующий запуск/сборка без явного `REVIVE_VERSION` будет сразу на актуальной версии;
+- документация и дефолты в файлах не расходятся с фактическим состоянием.
 
-4. Останови контейнеры без удаления volume:
-```bash
-docker compose -p revive -f docker-compose.yaml down
-```
+### Откат из бэкапа
 
-5. Учти нюанс с `plugins` и `www/delivery`: оба каталога в текущей схеме лежат в отдельных volume, поэтому новая версия не обновит встроенные файлы автоматически, если оставить старые volume как есть.
-- `delivery` лучше пересоздавать перед первым стартом новой версии, чтобы контейнер взял свежие файлы из нового образа
-- если кастомных плагинов нет, volume с суффиксом `revive_plugins` тоже лучше пересоздать
-- если кастомные плагины есть, сначала сохрани их отдельно, затем пересоздай volume и верни только свои кастомные каталоги, а не весь старый `plugins`
-
-Пример:
-```bash
-docker volume ls
-docker volume rm <имя_тома_с_revive_delivery>
-docker volume rm <имя_тома_с_revive_plugins>
-```
-
-6. Собери и запусти новую версию:
-```bash
-docker compose -p revive -f docker-compose.yaml up -d --build
-```
-
-7. Открой `http://localhost:8082` и пройди мастер обновления.
-- если Revive сразу показывает upgrade wizard, просто заверши обновление
-- если открылся обычный логин, создай флаг обновления и обнови страницу:
+Быстрый способ (рекомендуется) — скрипт:
 
 ```bash
-docker compose -p revive -f docker-compose.yaml exec revive touch /var/www/html/var/UPGRADE
+scripts/restore.sh --mode dev --backup-dir backups/dev-20260422-152427
+# или для prod
+scripts/restore.sh --mode prod --backup-dir backups/prod-YYYYMMDD-HHMMSS
 ```
 
-8. После завершения обновления проверь:
-- вход в админку
-- что кампании, зоны и баннеры на месте
-- что баннеры отдаются на сайте
-
-9. Если обновление пошло не так:
-- останови контейнеры
-- верни старый `REVIVE_VERSION`
-- подними старую версию
-- восстанови SQL-дамп и файлы из каталога `backups`
-
-Этот порядок повторяет официальный подход Revive: сначала бэкап, затем обновление файлов, затем запуск мастера обновления БД:
+Официальный порядок обновления Revive (backup -> files upgrade -> DB upgrade wizard):
 - https://www.revive-adserver.com/how-to/update/
 
 Пример прокси в хостовом Nginx:

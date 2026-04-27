@@ -1,13 +1,23 @@
 FROM alpine:3.20 AS downloader
 
 ARG REVIVE_VERSION=6.0.5
+ARG REVIVE_ARCHIVE_URL=
 
 RUN apk add --no-cache curl tar
 
 WORKDIR /tmp/revive
 
-RUN curl -fsSL "https://codeload.github.com/revive-adserver/revive-adserver/tar.gz/refs/tags/v${REVIVE_VERSION}" \
-    | tar -xz --strip-components=1
+RUN set -eux; \
+    archive_url="${REVIVE_ARCHIVE_URL}"; \
+    if [ -z "${archive_url}" ]; then \
+        archive_url="https://download.revive-adserver.com/revive-adserver-v${REVIVE_VERSION}.tar.gz"; \
+    fi; \
+    fallback_url="https://codeload.github.com/revive-adserver/revive-adserver/tar.gz/refs/tags/v${REVIVE_VERSION}"; \
+    if ! curl -fsSL "${archive_url}" -o /tmp/revive.tar.gz; then \
+        curl -fsSL "${fallback_url}" -o /tmp/revive.tar.gz; \
+    fi; \
+    tar -xzf /tmp/revive.tar.gz --strip-components=1; \
+    rm -f /tmp/revive.tar.gz
 
 
 FROM alpine:3.20

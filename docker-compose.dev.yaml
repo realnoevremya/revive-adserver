@@ -4,7 +4,8 @@ services:
       context: .
       dockerfile: docker/Dockerfile
       args:
-        REVIVE_VERSION: "6.0.5"
+        REVIVE_VERSION: "${REVIVE_VERSION:-6.0.5}"
+        REVIVE_ARCHIVE_URL: "${REVIVE_ARCHIVE_URL:-}"
     container_name: revive-adserver-dev-app
     restart: unless-stopped
     depends_on:
