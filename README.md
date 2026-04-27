@@ -78,6 +78,7 @@ $(ставь пробел впереди) docker compose -p revive -f docker-com
 Он выполняет шаги автоматически:
 - бэкап БД (`mysqldump`)
 - бэкап файлов `images`, `delivery`, `var`, `plugins`
+- снимок предыдущей установки `app/previous-install.tar.gz` (для шага Configuration)
 - опционально скачивает архив целевой версии в `backups/.../archive`
 - останавливает стек без удаления всех volume
 - пересоздает `delivery` volume по умолчанию (и `plugins` volume опционально)
@@ -86,6 +87,9 @@ $(ставь пробел впереди) docker compose -p revive -f docker-com
 
 Важно: `upgrade.sh` всегда вызывает [`scripts/backup.sh`](scripts/backup.sh) автоматически перед апгрейдом.
 Если ты забудешь сделать ручной бэкап, апгрейд все равно создаст резервную копию сам.
+Имя такого бэкапа формируется по текущей установленной версии (например: `dev-v6.0.5-YYYYMMDD-HHMMSS`).
+В конце `upgrade.sh` выводится готовый `previous path` для шага Configuration в мастере апгрейда.
+`previous path` собирается из локального бэкапа (`app/previous-install.tar.gz`).
 
 Перед апгрейдом можно сделать отдельный ручной бэкап (опционально, как дополнительная страховка):
 
@@ -98,6 +102,7 @@ scripts/backup.sh --mode prod
 В бэкап попадают:
 - SQL-дамп БД
 - `images`, `delivery`, `var`, `plugins`
+- `previous-install.tar.gz` (снимок текущей установки для шага upgrade wizard)
 - метаданные compose/Dockerfile (для удобства отката)
 
 ### Prod
@@ -133,19 +138,10 @@ scripts/upgrade.sh --mode prod --version 6.0.6 --recreate-plugins
 ### После выполнения скрипта
 
 1. Открой `http://localhost:8082`
-2. Пройди Upgrade Wizard
-3. Проверь кампании, зоны, баннеры и выдачу на сайтах
-
-### После успешного апгрейда (рекомендуется)
-
-Только если все проверки прошли успешно, обнови дефолтную версию в проекте на новую:
-- `docker-compose.yaml`
-- `docker-compose.dev.yaml`
-- `docker/Dockerfile` (`ARG REVIVE_VERSION`)
-
-Зачем это нужно:
-- следующий запуск/сборка без явного `REVIVE_VERSION` будет сразу на актуальной версии;
-- документация и дефолты в файлах не расходятся с фактическим состоянием.
+2. Пройди Upgrade Wizard до конца.
+3. На шаге `Configuration`, в поле `Path to previous Revive Adserver installation` укажи путь из вывода `upgrade.sh`
+   (обычно это `/tmp/revive-<текущая-версия>-prev` внутри контейнера `app`)
+4. Проверь кампании, зоны, баннеры и выдачу на сайтах
 
 ### Откат из бэкапа
 

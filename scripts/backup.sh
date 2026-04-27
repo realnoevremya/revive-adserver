@@ -134,6 +134,11 @@ backup_path "/var/www/html/www/delivery" "$BACKUP_DIR/app/delivery.tar.gz"
 backup_path "/var/www/html/var" "$BACKUP_DIR/app/var.tar.gz"
 backup_path "/var/www/html/plugins" "$BACKUP_DIR/app/plugins.tar.gz"
 
+log "Архивирую '/var/www/html' для шага 3 (Configuration)..."
+"${compose_cmd[@]}" exec -T "$APP_SERVICE" sh -lc \
+    "tar -C /var/www/html -czf - --exclude='./www/images' --exclude='./www/delivery' ." \
+    > "$BACKUP_DIR/app/previous-install.tar.gz"
+
 if command -v shasum >/dev/null 2>&1; then
     log "Считаю контрольные суммы..."
     (
@@ -153,6 +158,7 @@ cat <<EOF
   - ${BACKUP_DIR}/app/delivery.tar.gz
   - ${BACKUP_DIR}/app/var.tar.gz
   - ${BACKUP_DIR}/app/plugins.tar.gz
+  - ${BACKUP_DIR}/app/previous-install.tar.gz (для шага 3 Configuration)
 
 Быстрый restore БД (пример):
   gunzip -c ${BACKUP_DIR}/db/${db_name}.sql.gz | docker compose -p ${PROJECT_NAME} -f ${COMPOSE_FILE} exec -T mysql mysql -uroot ${db_name}
