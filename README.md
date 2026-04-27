@@ -128,7 +128,7 @@ scripts/upgrade.sh --mode prod --version 6.0.6 --recreate-plugins
 - Пример для `6.0.6`:
   `https://download.revive-adserver.com/revive-adserver-v6.0.6.tar.gz`
 - В проекте это можно переопределить через `REVIVE_ARCHIVE_URL` или флаг скрипта `--archive-url`.
-- Если официальный архив недоступен, Dockerfile и скрипт используют fallback на GitHub tag archive.
+- При запуске `upgrade.sh` архив сохраняется в: `backups/.../archive/revive-adserver-v<VERSION>.tar.gz`.
 
 ### После выполнения скрипта
 
@@ -156,6 +156,11 @@ scripts/restore.sh --mode dev --backup-dir backups/dev-20260422-152427
 # или для prod
 scripts/restore.sh --mode prod --backup-dir backups/prod-YYYYMMDD-HHMMSS
 ```
+
+Что делает `restore.sh`:
+- восстанавливает БД и файлы `images/delivery/var/plugins`;
+- если в `meta` бэкапа есть версия, пересобирает контейнер на этой версии;
+- удаляет `var/UPGRADE`, чтобы админка не зависала на `install.php` после restore.
 
 Официальный порядок обновления Revive (backup -> files upgrade -> DB upgrade wizard):
 - https://www.revive-adserver.com/how-to/update/

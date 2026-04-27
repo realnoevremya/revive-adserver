@@ -76,6 +76,7 @@ require_cmd docker
 require_cmd gunzip
 require_cmd cat
 require_cmd find
+require_cmd sed
 
 docker compose version >/dev/null 2>&1 || die "docker compose недоступен"
 compose_cmd=(docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE")
@@ -95,6 +96,24 @@ plugins_tar="$BACKUP_DIR/app/plugins.tar.gz"
 
 db_name="$(basename "$sql_gz" .sql.gz)"
 [[ -n "$db_name" ]] || die "Не удалось определить имя БД из '$sql_gz'"
+
+backup_compose_meta="$BACKUP_DIR/meta/$(basename "$COMPOSE_FILE")"
+backup_dockerfile_meta="$BACKUP_DIR/meta/Dockerfile"
+backup_code_version=""
+
+if [[ -f "$backup_compose_meta" ]]; then
+    backup_code_version="$(sed -n 's/.*REVIVE_VERSION:[[:space:]]*"\${REVIVE_VERSION:-\([^"}]*\)}".*/\1/p' "$backup_compose_meta" | head -n1)"
+fi
+
+if [[ -z "$backup_code_version" && -f "$backup_dockerfile_meta" ]]; then
+    backup_code_version="$(sed -n 's/^ARG REVIVE_VERSION=\(.*\)$/\1/p' "$backup_dockerfile_meta" | head -n1)"
+fi
+
+if [[ -n "$backup_code_version" ]]; then
+    log "Версия кода из метаданных бэкапа: ${backup_code_version}"
+else
+    log "Версия кода в метаданных бэкапа не найдена, будет использован текущий образ."
+fi
 
 log "Поднимаю необходимые сервисы..."
 "${compose_cmd[@]}" up -d mysql "$APP_SERVICE"
@@ -125,6 +144,14 @@ restore_tar "$delivery_tar"
 restore_tar "$var_tar"
 restore_tar "$plugins_tar"
 
+if [[ -n "$backup_code_version" ]]; then
+    log "Пересобираю контейнер приложения на версии ${backup_code_version}..."
+    env REVIVE_VERSION="${backup_code_version}" "${compose_cmd[@]}" up -d --build --force-recreate "$APP_SERVICE"
+fi
+
+log "Удаляю флаг '/var/www/html/var/UPGRADE' после восстановления..."
+"${compose_cmd[@]}" exec -T "$APP_SERVICE" sh -lc "rm -f /var/www/html/var/UPGRADE"
+
 log "Перезапускаю сервис приложения..."
 "${compose_cmd[@]}" restart "$APP_SERVICE"
 
@@ -134,6 +161,7 @@ cat <<EOF
 Бэкап: ${BACKUP_DIR}
 Режим: ${MODE}
 БД: ${db_name}
+Версия кода: ${backup_code_version:-текущая}
 
 Проверь:
 1) http://localhost:8082
