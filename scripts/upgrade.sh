@@ -82,8 +82,8 @@ sed -n "/^\[database\]/,/^\[/p" "$config_file" | sed "1d; \$d"
             log "ℹ️ ${line}"
         done <<< "$check_output"
 
-        if printf '%s\n' "$check_output" | grep -q '^host=localhost:3306$'; then
-            log "⚠️ host=localhost:3306 может ломать подключение в Docker."
+        if printf '%s\n' "$check_output" | grep -Eq '^host="?localhost(:3306)?"?$'; then
+            log "⚠️ host=localhost может ломать подключение в Docker."
             log "⚠️ Обычно здесь должен быть host=mysql, а port=3306 отдельной строкой."
         fi
 

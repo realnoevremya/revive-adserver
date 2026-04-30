@@ -183,8 +183,8 @@ db_root_password="$("${compose_cmd[@]}" exec -T mysql sh -lc 'printf "%s" "${MYS
 
 log "Восстанавливаю базу данных '${db_name}'..."
 if [[ -n "$db_root_password" ]]; then
-    "${compose_cmd[@]}" exec -T mysql sh -lc "mysql -uroot -p\"\$MYSQL_ROOT_PASSWORD\" -e \"DROP DATABASE IF EXISTS \`${db_name}\`; CREATE DATABASE \`${db_name}\`;\""
-    gunzip -c "$sql_gz" | "${compose_cmd[@]}" exec -T mysql sh -lc "mysql -uroot -p\"\$MYSQL_ROOT_PASSWORD\" \"${db_name}\""
+    "${compose_cmd[@]}" exec -T mysql mysql -uroot "-p${db_root_password}" -e "DROP DATABASE IF EXISTS \`${db_name}\`; CREATE DATABASE \`${db_name}\`;"
+    gunzip -c "$sql_gz" | "${compose_cmd[@]}" exec -T mysql mysql -uroot "-p${db_root_password}" "${db_name}"
 else
     "${compose_cmd[@]}" exec -T mysql mysql -uroot -e "DROP DATABASE IF EXISTS \`${db_name}\`; CREATE DATABASE \`${db_name}\`;"
     gunzip -c "$sql_gz" | "${compose_cmd[@]}" exec -T mysql mysql -uroot "$db_name"
