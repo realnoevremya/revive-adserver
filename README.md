@@ -15,10 +15,8 @@ docker compose -p revive -f docker-compose.dev.yaml up --build
 3. На шаге подключения к БД:
 - Hostname: `mysql` <- имя контейнера
 - Database Name: `revive`
-- User: `root` или `revive`
-- Password:
-  - для `root`: пустой
-  - для `revive`: `revive_pass`
+- User: `revive`
+- Password: `revive_pass`
 
 4. Форма юзера произвольная:
 - Administrator Username: `revive`
@@ -51,7 +49,7 @@ docker compose -p revive -f docker-compose.yaml up -d --build
 ```
 
 3. На шаге подключения к БД:
-- Host: `localhost`
+- Host: `mysql` <- имя сервиса БД в docker-compose сети
 - Database: `revive`
 - User: `root` или `revive`
 - Password:
@@ -75,45 +73,34 @@ $(ставь пробел впереди) docker compose -p revive -f docker-com
 ## Обновление версии без потери БД и баннеров
 
 Для upgrade добавлен скрипт [`scripts/upgrade.sh`](scripts/upgrade.sh).  
+
 Он выполняет шаги автоматически:
+- вызывает [`scripts/backup.sh`](scripts/backup.sh) автоматически перед апгрейдом (например: `backups/dev-v6.0.5-YYYYMMDD-HHMMSS`).
 - бэкап БД (`mysqldump`)
 - бэкап файлов `images`, `delivery`, `var`, `plugins`
 - снимок предыдущей установки `app/previous-install.tar.gz` (для шага Configuration)
-- опционально скачивает архив целевой версии в `backups/.../archive`
+- скачивает архив целевой версии в `backups/.../archive`
 - останавливает стек без удаления всех volume
 - пересоздает `delivery` volume по умолчанию (и `plugins` volume опционально)
 - пересборка на новой версии
 - установка флага `var/UPGRADE`
+- выводится готовый `previous path` для шага Configuration в мастере апгрейда.
 
-Важно: `upgrade.sh` всегда вызывает [`scripts/backup.sh`](scripts/backup.sh) автоматически перед апгрейдом.
-Если ты забудешь сделать ручной бэкап, апгрейд все равно создаст резервную копию сам.
-Имя такого бэкапа формируется по текущей установленной версии (например: `dev-v6.0.5-YYYYMMDD-HHMMSS`).
-В конце `upgrade.sh` выводится готовый `previous path` для шага Configuration в мастере апгрейда.
-`previous path` собирается из локального бэкапа (`app/previous-install.tar.gz`).
-
-Перед апгрейдом можно сделать отдельный ручной бэкап (опционально, как дополнительная страховка):
+### Бекап можно запустить вручную
 
 ```bash
-scripts/backup.sh --mode dev
-# или
 scripts/backup.sh --mode prod
+
+# or dev
+scripts/backup.sh --mode dev
 ```
 
-В бэкап попадают:
-- SQL-дамп БД
-- `images`, `delivery`, `var`, `plugins`
-- `previous-install.tar.gz` (снимок текущей установки для шага upgrade wizard)
-- метаданные compose/Dockerfile (для удобства отката)
-
-### Prod
+### Запуск апгрейда:
 
 ```bash
 scripts/upgrade.sh --mode prod --version 6.0.6
-```
 
-### Dev
-
-```bash
+# or dev
 scripts/upgrade.sh --mode dev --version 6.0.6
 ```
 
