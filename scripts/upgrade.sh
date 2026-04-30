@@ -42,6 +42,63 @@ require_cmd() {
     command -v "$1" >/dev/null 2>&1 || die "Не найдена команда '$1'"
 }
 
+check_db_connection_from_var_config() {
+    local check_output
+
+    log "🔎 Показываю активный DB-конфиг из var/default.conf.php..."
+
+    if check_output="$("${compose_cmd[@]}" exec -T "$APP_SERVICE" sh -lc '
+set -eu
+
+default_conf="/var/www/html/var/default.conf.php"
+[ -f "$default_conf" ] || {
+  echo "NO_DEFAULT_CONF=$default_conf"
+  exit 2
+}
+
+real_config="$(sed -n "s/^realConfig=//p" "$default_conf" | head -n1)"
+real_config="${real_config#\"}"
+real_config="${real_config%\"}"
+[ -n "$real_config" ] || {
+  echo "NO_REAL_CONFIG_IN_DEFAULT"
+  exit 3
+}
+
+config_file="/var/www/html/var/${real_config}.conf.php"
+[ -f "$config_file" ] || {
+  echo "NO_REAL_CONFIG_FILE=$config_file"
+  exit 4
+}
+
+echo "DEFAULT_CONF=$default_conf"
+echo "REAL_CONFIG=$real_config"
+echo "CONFIG_FILE=$config_file"
+echo
+echo "[database]"
+sed -n "/^\[database\]/,/^\[/p" "$config_file" | sed "1d; \$d"
+' 2>&1)"; then
+        while IFS= read -r line; do
+            [[ -n "$line" ]] || continue
+            log "ℹ️ ${line}"
+        done <<< "$check_output"
+
+        if printf '%s\n' "$check_output" | grep -q '^host=localhost:3306$'; then
+            log "⚠️ host=localhost:3306 может ломать подключение в Docker."
+            log "⚠️ Обычно здесь должен быть host=mysql, а port=3306 отдельной строкой."
+        fi
+
+        return 0
+    fi
+
+    log "⚠️ Не удалось прочитать активный DB-конфиг из var/default.conf.php"
+    while IFS= read -r line; do
+        [[ -n "$line" ]] || continue
+        log "⚠️ ${line}"
+    done <<< "$check_output"
+
+    return 0
+}
+
 MODE="prod"
 TARGET_VERSION=""
 PROJECT_NAME="revive"
@@ -231,6 +288,8 @@ fi
 
 log "🧷 Ставлю флаг обновления '/var/www/html/var/UPGRADE'..."
 "${compose_cmd[@]}" exec -T "$APP_SERVICE" touch /var/www/html/var/UPGRADE || true
+
+check_db_connection_from_var_config
 
 PREVIOUS_PATH_HINT=""
 previous_local_archive="$BACKUP_DIR/app/previous-install.tar.gz"
