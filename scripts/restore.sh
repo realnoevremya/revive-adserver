@@ -61,17 +61,16 @@ echo "REAL_CONFIG=$real_config"
 echo "CONFIG_FILE=$config_file"
 echo
 echo "[database]"
-sed -n "/^\[database\]/,/^\[/p" "$config_file" | sed "1d; \$d"
+awk '
+  /^\[database\]$/ { in_db=1; next }
+  /^\[/ { if (in_db) exit }
+  in_db && ($0 ~ /^(host|port|username|name)=/) { print }
+' "$config_file"
 ' 2>&1)"; then
         while IFS= read -r line; do
             [[ -n "$line" ]] || continue
             log "ℹ️ ${line}"
         done <<< "$check_output"
-
-        if printf '%s\n' "$check_output" | grep -Eq '^host="?localhost(:3306)?"?$'; then
-            log "⚠️ host=localhost может ломать подключение в Docker."
-            log "⚠️ Обычно здесь должен быть host=mysql, а port=3306 отдельной строкой."
-        fi
 
         return 0
     fi
@@ -221,10 +220,5 @@ cat <<EOF
 Режим: ${MODE}
 БД: ${db_name}
 Версия кода: ${backup_code_version:-текущая}
-
-Проверь:
-1) http://localhost:8082
-2) вход в админку
-3) кампании/зоны/баннеры
 
 EOF
