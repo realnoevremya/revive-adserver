@@ -70,6 +70,25 @@ config_file="/var/www/html/var/${real_config}.conf.php"
   exit 4
 }
 
+current_host="$(awk '
+  /^\[database\]$/ { in_db=1; next }
+  /^\[/ { if (in_db) exit; next }
+  in_db && /^host=/ { sub(/^host=/, ""); print; exit }
+' "$config_file" | sed "s/^\"//; s/\"$//")"
+case "$current_host" in
+  localhost|localhost:3306|127.0.0.1|127.0.0.1:3306)
+    tmp_cfg="${config_file}.tmp.$$"
+    awk '
+      /^\[database\]$/ { in_db=1; print; next }
+      /^\[/ { in_db=0; print; next }
+      in_db && /^host=/ { $0="host=\"mysql\"" }
+      in_db && /^port=/ { $0="port=3306" }
+      { print }
+    ' "$config_file" > "$tmp_cfg"
+    mv "$tmp_cfg" "$config_file"
+    ;;
+esac
+
 echo "DEFAULT_CONF=$default_conf"
 echo "REAL_CONFIG=$real_config"
 echo "CONFIG_FILE=$config_file"
