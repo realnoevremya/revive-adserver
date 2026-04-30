@@ -124,7 +124,7 @@ scripts/upgrade.sh --mode prod --version 6.0.6 --recreate-plugins
 
 ### После выполнения скрипта
 
-1. Открой `http://localhost:8082`
+1. Открой `http://localhost:8082` - **dev** или домен https://b.realnoevremya.ru, если речь о **prod**.
 2. Пройди Upgrade Wizard до конца.
 3. На шаге `Configuration`, в поле `Path to previous Revive Adserver installation` укажи путь из вывода `upgrade.sh`
    (обычно это `/tmp/revive-<текущая-версия>-prev` внутри контейнера `app`)
@@ -145,22 +145,5 @@ scripts/restore.sh --mode prod --backup-dir backups/prod-YYYYMMDD-HHMMSS
 - если в `meta` бэкапа есть версия, пересобирает контейнер на этой версии;
 - удаляет `var/UPGRADE`, чтобы админка не зависала на `install.php` после restore.
 
-Официальный порядок обновления Revive (backup -> files upgrade -> DB upgrade wizard):
+Официальный порядок обновления Revive:
 - https://www.revive-adserver.com/how-to/update/
-
-Пример прокси в хостовом Nginx:
-
-```nginx
-server {
-    listen 80;
-    server_name ads.example.com;
-
-    location / {
-        proxy_pass http://127.0.0.1:8082;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
