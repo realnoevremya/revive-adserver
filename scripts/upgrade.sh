@@ -359,16 +359,11 @@ cat <<EOF
   ${BACKUP_DIR}
 
 Следующие шаги вручную:
-1) Открой http://localhost:8082
+1) Открой сайт
 2) Пройди Upgrade Wizard до конца.
-   На шаге Configuration (он может снова появиться позже, например на шаге 4, если слетела сессия),
-   в поле "Path to previous Revive Adserver installation" укажи:
+   На шаге Configuration в поле "Path to previous Revive Adserver installation" укажи:
    ${PREVIOUS_PATH_FOR_WIZARD}
 3) Проверь кампании/зоны/баннеры и отдачу креативов
-
-EOF
-
-cat <<EOF
 
 Если нужно откатиться:
   scripts/restore.sh --mode ${MODE} --backup-dir ${BACKUP_DIR}
