@@ -75,11 +75,7 @@ echo "REAL_CONFIG=$real_config"
 echo "CONFIG_FILE=$config_file"
 echo
 echo "[database]"
-awk '
-  /^\[database\]$/ { in_db=1; next }
-  /^\[/ { if (in_db) exit }
-  in_db && ($0 ~ /^(host|port|username|name)=/) { print }
-' "$config_file"
+sed -n "/^\[database\]/,/^\[/p" "$config_file" | sed "1d; \$d" | grep -E "^(host|port|username|name)=" || true
 ' 2>&1)"; then
         while IFS= read -r line; do
             [[ -n "$line" ]] || continue
