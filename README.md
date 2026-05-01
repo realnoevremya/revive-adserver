@@ -1,4 +1,4 @@
-# Revive Adserver v6.0.5 (Docker)
+# Revive Adserver v6 (Docker)
 
 Сборка переделана по структуре официального docker-проекта (`codions/revive-adserver`), адаптирована под Revive `6.0.5` и ваш dev-поток.
 
